@@ -1,6 +1,10 @@
 import unittest
 from copy import deepcopy
-from servicefusion.model import Contact, Address, InMemoryBackend
+
+from pymongo import MongoClient
+from bson.objectid import ObjectId
+
+from servicefusion.model import Contact, Address, InMemoryBackend, MongoBackend
 
 
 class ContactTest(unittest.TestCase):
@@ -15,66 +19,60 @@ class ContactTest(unittest.TestCase):
             addresses=[Address('street', 'city', 'AL', '12345')])
         self.assertEqual(expected, contact)
 
-class InMemoryTest(unittest.TestCase):
+class BaseTests:
     def test_add_contact(self):
         contact = Contact(firstname='First', lastname='Last', emails=['bruno@bruno.com'],
                          phone_numbers=['55-31-1234-4321'], addresses=[])
-        backend = InMemoryBackend()
-        new_id = backend.add_contact(contact)
-        self.assertEqual(new_id, backend.contacts[0].contact_id)
+        new_id = self._backend.add_contact(contact)
+        self.assertEqual(new_id, self._contacts[0].contact_id)
         self.assertIsNone(contact.contact_id)
         contact.contact_id = new_id
-        self.assertEqual(backend.contacts, [contact])
+        self.assertEqual(self._contacts, [contact])
 
     def test_delete_contact(self):
         contact = Contact(firstname='First', lastname='Last', emails=['bruno@bruno.com'],
                          phone_numbers=['55-31-1234-4321'], addresses=[])
-        backend = InMemoryBackend()
-        new_id = backend.add_contact(contact)
-        self.assertEqual(len(backend.contacts), 1)
-        backend.delete_contact(new_id)
-        self.assertEqual(len(backend.contacts), 0)
+        new_id = self._backend.add_contact(contact)
+        self.assertEqual(len(self._contacts), 1)
+        self._backend.delete_contact(new_id)
+        self.assertEqual(len(self._contacts), 0)
 
     def test_update_contact(self):
         contact = Contact(firstname='First', lastname='Last', emails=['bruno@bruno.com'],
                          phone_numbers=['55-31-1234-4321'], addresses=[])
-        backend = InMemoryBackend()
-        new_id = backend.add_contact(contact)
+        new_id = self._backend.add_contact(contact)
         contact.contact_id = new_id
         contact.firstname = 'NewFirst'
-        self.assertNotEqual(backend.contacts, [contact])
-        backend.update_contact(contact)
-        self.assertEqual(backend.contacts, [contact])
+        self.assertNotEqual(self._contacts, [contact])
+        self._backend.update_contact(contact)
+        self.assertEqual(self._contacts, [contact])
 
     def test_update_contact_not_available(self):
         contact = Contact(firstname='First', lastname='Last', emails=['bruno@bruno.com'],
                          phone_numbers=['55-31-1234-4321'], addresses=[])
-        backend = InMemoryBackend()
-        new_id = backend.add_contact(contact)
+        new_id = self._backend.add_contact(contact)
         contact.contact_id = new_id
         old_contact = deepcopy(contact)
-        contact.contact_id = 10000
+        contact.contact_id = self._unavailable_id
         contact.firstname = 'NewFirst'
-        self.assertNotEqual(backend.contacts, [contact])
-        backend.update_contact(contact)
-        self.assertEqual(backend.contacts, [old_contact])
-        self.assertNotEqual(backend.contacts, [contact])
+        self.assertNotEqual(self._contacts, [contact])
+        self._backend.update_contact(contact)
+        self.assertEqual(self._contacts, [old_contact])
+        self.assertNotEqual(self._contacts, [contact])
 
     def test_get_contact(self):
         contact = Contact(firstname='First', lastname='Last', emails=['bruno@bruno.com'],
                          phone_numbers=['55-31-1234-4321'], addresses=[])
-        backend = InMemoryBackend()
-        new_id = backend.add_contact(contact)
+        new_id = self._backend.add_contact(contact)
         contact.contact_id = new_id
-        self.assertEqual(contact, backend.get_contact(new_id))
+        self.assertEqual(contact, self._backend.get_contact(new_id))
 
     def test_get_contact_not_available(self):
-        backend = InMemoryBackend()
-        self.assertIsNone(backend.get_contact(100))
+        self.assertIsNone(self._backend.get_contact(self._unavailable_id))
 
-
-class InMemorySearchTest(unittest.TestCase):
-    def setUp(self):
+class BaseSearchTests:
+    def baseSearchSetUp(self, backend):
+        self.backend = backend
         self.first = Contact(firstname='First', lastname='Contact', emails=['bruno@bruno.com'],
                         phone_numbers=['55-31-1234-4321'], addresses=[])
         self.random = Contact(firstname='Someone', lastname='Random', emails=['bruno@bruno.com'],
@@ -90,11 +88,9 @@ class InMemorySearchTest(unittest.TestCase):
             self.not_random,
             self.fourth,
         ]
-        backend = InMemoryBackend()
         for contact in data:
-            new_id = backend.add_contact(contact)
+            new_id = self.backend.add_contact(contact)
             contact.contact_id = new_id
-        self.backend = backend
 
     def test_no_filter(self):
         # results are ordered by firstname and then lastname
@@ -115,3 +111,45 @@ class InMemorySearchTest(unittest.TestCase):
         self.assertEqual([self.first, self.fourth], self.backend.search_contacts(firstname='f', lastname='c'))
         self.assertEqual([self.fourth], self.backend.search_contacts(firstname='fourth', lastname='contact'))
         self.assertEqual([], self.backend.search_contacts(firstname='f', lastname='contact1'))
+
+class InMemoryTest(unittest.TestCase, BaseTests):
+    def setUp(self):
+        self._backend = InMemoryBackend()
+
+    @property
+    def _contacts(self):
+        return self._backend.contacts
+
+    @property
+    def _unavailable_id(self):
+        return 10000
+
+class InMemorySearchTest(unittest.TestCase, BaseSearchTests):
+    def setUp(self):
+        self.baseSearchSetUp(InMemoryBackend())
+
+class MongoBackendTest(unittest.TestCase, BaseTests):
+    def setUp(self):
+        self._mongo = MongoClient('mongodb://127.0.0.1:27017')
+        self._backend = MongoBackend(self._mongo.servicefusion_test)
+
+    def tearDown(self):
+        self._mongo.drop_database('servicefusion_test')
+        self._mongo.close()
+
+    @property
+    def _unavailable_id(self):
+        return ObjectId(b'123456789012')
+
+    @property
+    def _contacts(self):
+        return self._backend.all_contacts()
+
+class MongoBackendSearchTest(unittest.TestCase, BaseSearchTests):
+    def setUp(self):
+        self._mongo = MongoClient('mongodb://127.0.0.1:27017')
+        self.baseSearchSetUp(MongoBackend(self._mongo.servicefusion_test))
+
+    def tearDown(self):
+        self._mongo.drop_database('servicefusion_test')
+        self._mongo.close()
