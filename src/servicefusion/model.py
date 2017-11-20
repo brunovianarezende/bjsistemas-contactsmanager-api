@@ -1,13 +1,22 @@
 from copy import deepcopy
 
 class Contact:
-    def __init__(self, contact_id=None, firstname=None, lastname=None, emails=[], phone_numbers=[], addresses=[]):
+    def __init__(self, contact_id=None, firstname=None, lastname=None, birthdate=None, emails=[], phone_numbers=[], addresses=[]):
         self.contact_id = contact_id
         self.firstname = firstname
         self.lastname = lastname
+        self.birthdate = birthdate
         self.emails = emails
         self.phone_numbers = phone_numbers
         self.addresses = addresses
+
+    @classmethod
+    def from_raw_dict(cls, **kwargs):
+        params = dict(**kwargs)
+        addresses = [Address(**a) for a in params.pop('addresses', [])]
+        params['addresses'] = addresses
+        result = cls(**params)
+        return result
 
     def __eq__(self, other):
         if other is None:
@@ -18,6 +27,23 @@ class Contact:
 
     def __repr__(self):
         return 'Contact(%s)' % ({k: getattr(self, k) for k in ('contact_id', 'firstname', 'lastname', 'emails', 'phone_numbers', 'addresses')},)
+
+class Address:
+    def __init__(self, street='', city='', state='', zipcode=''):
+        self.street = street
+        self.city = city
+        self.state = state
+        self.zipcode = zipcode
+
+    def __eq__(self, other):
+        if other is None:
+            return False
+        else:
+            return all(getattr(self, attr) == getattr(other, attr)
+                       for attr in ('street', 'city', 'state', 'zipcode'))
+
+    def __repr__(self):
+        return 'Address(%s)' % ({k: getattr(self, k) for k in ('street', 'city', 'state', 'zipcode')},)
 
 class Backend:
     def get_contact(self, contact_id):

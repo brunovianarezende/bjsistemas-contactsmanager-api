@@ -1,7 +1,19 @@
 import unittest
 from copy import deepcopy
-from servicefusion.model import Contact, InMemoryBackend
+from servicefusion.model import Contact, Address, InMemoryBackend
 
+
+class ContactTest(unittest.TestCase):
+    def test_from_raw_dict(self):
+        contact = Contact.from_raw_dict(firstname='firstname', lastname='lastname',
+            emails=['bruno@bruno.com'], phone_numbers=['55-31-1234-4321'],
+            birthdate='1975-11-02',
+            addresses=[{'street': 'street', 'city': 'city', 'state': 'AL', 'zipcode': '12345'}])
+        expected = Contact(firstname='firstname', lastname='lastname',
+            emails=['bruno@bruno.com'], phone_numbers=['55-31-1234-4321'],
+            birthdate='1975-11-02',
+            addresses=[Address('street', 'city', 'AL', '12345')])
+        self.assertEqual(expected, contact)
 
 class InMemoryTest(unittest.TestCase):
     def test_add_contact(self):
