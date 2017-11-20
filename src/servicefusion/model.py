@@ -77,6 +77,7 @@ class InMemoryBackend(Backend):
         self.contacts = [c for c in self.contacts if c.contact_id != contact_id]
 
     def update_contact(self, contact):
+        contact = deepcopy(contact)
         index = next((index for index, c in enumerate(self.contacts) if c.contact_id == contact.contact_id), -1)
         if index != -1:
             self.contacts[index] = contact

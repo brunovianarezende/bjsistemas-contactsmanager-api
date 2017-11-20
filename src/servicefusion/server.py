@@ -9,7 +9,6 @@ from .validation import validate_contact, ValidationError
 app = Flask(__name__)
 
 _db = lambda: app.config['BACKEND']
-
 dumps = lambda o: jsonpickle.dumps(o, unpicklable=False)
 
 @app.route('/search/contacts/', methods=['GET'])
@@ -26,7 +25,7 @@ def add_contact():
         return make_response(dumps(dict(error='invalid input')), 400)
     try:
         new_contact = Contact.from_raw_dict(**new_contact_raw)
-    except TypeError as e:
+    except TypeError:
         return make_response(dumps(dict(error='invalid input')), 400)
     try:
         validate_contact(new_contact)
@@ -36,10 +35,42 @@ def add_contact():
     new_id = _db().add_contact(new_contact)
     return make_response(dumps(new_id))
 
-@app.route('/contacts/<id>', methods=['PUT'])
+@app.route('/contacts/<contact_id>/', methods=['PUT'])
 def edit_contact(contact_id):
-    return 'Hello, World! - %s' % contact_id
+    try:
+        contact_id = int(contact_id)
+    except:
+        return make_response(dumps({'ok': False}), 404)
+    try:
+        new_contact_raw = json.loads(request.data)
+    except JSONDecodeError:
+        return make_response(dumps(dict(error='invalid input')), 400)
+    try:
+        new_contact = Contact.from_raw_dict(**new_contact_raw)
+    except TypeError:
+        return make_response(dumps(dict(error='invalid input')), 400)
+    try:
+        if contact_id != new_contact.contact_id:
+            raise ValidationError("Invalid id")
+        validate_contact(new_contact)
+    except ValidationError:
+        return make_response(dumps(dict(error='invalid input')), 400)
+    db = _db()
+    if db.get_contact(contact_id):
+        db.update_contact(new_contact)
+        return make_response(dumps({'ok': True}))
+    else:
+        return make_response(dumps({'ok': False}), 404)
 
-@app.route('/contacts/<id>', methods=['DELETE'])
+@app.route('/contacts/<contact_id>/', methods=['DELETE'])
 def delete_contact(contact_id):
-    return 'Hello, World! - %s' % contact_id
+    try:
+        contact_id = int(contact_id)
+    except:
+        return make_response(dumps({'ok': False}), 404)
+    db = _db()
+    if db.get_contact(contact_id):
+        db.delete_contact(contact_id)
+        return make_response(dumps({'ok': True}))
+    else:
+        return make_response(dumps({'ok': False}), 404)
