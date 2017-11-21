@@ -22,15 +22,15 @@ def add_contact():
     try:
         new_contact_raw = json.loads(request.data)
     except JSONDecodeError:
-        return make_response(dumps(dict(error='invalid input')), 400)
+        return make_response(dumps(dict(error='invalid input - not json')), 400)
     try:
         new_contact = Contact.from_raw_dict(**new_contact_raw)
-    except TypeError:
-        return make_response(dumps(dict(error='invalid input')), 400)
+    except TypeError as e:
+        return make_response(dumps(dict(error='invalid input - invalid fields %s' % e)), 400)
     try:
         validate_contact(new_contact)
     except ValidationError:
-        return make_response(dumps(dict(error='invalid input')), 400)
+        return make_response(dumps(dict(error='invalid input - validation error')), 400)
 
     new_id = _db().add_contact(new_contact)
     return make_response(dumps(new_id))
@@ -38,23 +38,19 @@ def add_contact():
 @app.route('/contacts/<contact_id>/', methods=['PUT'])
 def edit_contact(contact_id):
     try:
-        contact_id = int(contact_id)
-    except:
-        return make_response(dumps({'ok': False}), 404)
-    try:
         new_contact_raw = json.loads(request.data)
     except JSONDecodeError:
-        return make_response(dumps(dict(error='invalid input')), 400)
+        return make_response(dumps(dict(error='invalid input - not a json')), 400)
     try:
         new_contact = Contact.from_raw_dict(**new_contact_raw)
     except TypeError:
-        return make_response(dumps(dict(error='invalid input')), 400)
+        return make_response(dumps(dict(error='invalid input - invalid fields')), 400)
     try:
-        if contact_id != new_contact.contact_id:
+        if contact_id != str(new_contact.contact_id):
             raise ValidationError("Invalid id")
         validate_contact(new_contact)
     except ValidationError:
-        return make_response(dumps(dict(error='invalid input')), 400)
+        return make_response(dumps(dict(error='invalid input - validation error')), 400)
     db = _db()
     if db.get_contact(contact_id):
         db.update_contact(new_contact)
@@ -64,10 +60,6 @@ def edit_contact(contact_id):
 
 @app.route('/contacts/<contact_id>/', methods=['DELETE'])
 def delete_contact(contact_id):
-    try:
-        contact_id = int(contact_id)
-    except:
-        return make_response(dumps({'ok': False}), 404)
     db = _db()
     if db.get_contact(contact_id):
         db.delete_contact(contact_id)

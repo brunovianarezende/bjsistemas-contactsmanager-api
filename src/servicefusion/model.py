@@ -80,15 +80,27 @@ class InMemoryBackend(Backend):
         return new_contact.contact_id
 
     def delete_contact(self, contact_id):
+        try:
+            contact_id = int(contact_id)
+        except:
+            return None
         self.contacts = [c for c in self.contacts if c.contact_id != contact_id]
 
     def update_contact(self, contact):
+        try:
+            contact_id = int(contact.contact_id)
+        except:
+            return None
         contact = deepcopy(contact)
-        index = next((index for index, c in enumerate(self.contacts) if c.contact_id == contact.contact_id), -1)
+        index = next((index for index, c in enumerate(self.contacts) if c.contact_id == contact_id), -1)
         if index != -1:
             self.contacts[index] = contact
 
     def get_contact(self, contact_id):
+        try:
+            contact_id = int(contact_id)
+        except:
+            return None
         index = next((index for index, c in enumerate(self.contacts) if c.contact_id == contact_id), -1)
         if index != -1:
             return self.contacts[index]
@@ -136,10 +148,18 @@ class MongoBackend(Backend):
         return str(contact_id)
 
     def delete_contact(self, contact_id):
-        self._collection.delete_one({'_id': ObjectId(contact_id)})
+        try:
+            contact_id = ObjectId(contact_id)
+        except:
+            return None
+        self._collection.delete_one({'_id': contact_id})
 
     def get_contact(self, contact_id):
-        result = self._collection.find_one({'_id': ObjectId(contact_id)})
+        try:
+            contact_id = ObjectId(contact_id)
+        except:
+            return None
+        result = self._collection.find_one({'_id': contact_id})
         if result is not None:
             return self._map_contact(result)
         else:
@@ -147,7 +167,10 @@ class MongoBackend(Backend):
 
     def update_contact(self, contact):
         dict_repr = self._to_dict(contact)
-        contact_id = ObjectId(dict_repr.pop('contact_id'))
+        try:
+            contact_id = ObjectId(dict_repr.pop('contact_id'))
+        except:
+            return None
         self._collection.find_one_and_replace({'_id': contact_id}, dict_repr)
 
     def search_contacts(self, firstname='', lastname=''):

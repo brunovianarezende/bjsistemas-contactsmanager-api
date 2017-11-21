@@ -66,10 +66,3 @@ class TestValidation(unittest.TestCase):
             with self.assertRaises(ValidationError, msg='invalid value %s' % invalid_value):
                 address.city = invalid_value
                 validate_address(address)
-
-    def test_address_state_validation(self):
-        address = Address(street='street', city='city', state='state', zipcode='12345')
-        for invalid_value in ['', {1: 2}, [1], 1]:
-            with self.assertRaises(ValidationError, msg='invalid value %s' % invalid_value):
-                address.state = invalid_value
-                validate_address(address)

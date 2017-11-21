@@ -150,6 +150,7 @@ class TestServer(unittest.TestCase):
             new_id = app.config['BACKEND'].add_contact(contact)
             contact.contact_id = new_id
         first = to_dict(self.first)
+        first['contact_id'] = 'invalid'
         response = self.app.put('/contacts/invalid/', data=dumps(first))
         self.assertEqual(response.status_code, 404)
 

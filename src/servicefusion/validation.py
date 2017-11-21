@@ -61,7 +61,6 @@ def validate_addresses(addresses):
 def validate_address(address):
     validate_street(address.street)
     validate_city(address.city)
-    validate_state(address.state)
 
 def validate_street(street):
     if not isinstance(street, str):
@@ -74,12 +73,6 @@ def validate_city(city):
         raise ValidationError('invalid city type')
     if not city:
         raise ValidationError('city is required')
-
-def validate_state(state):
-    if not isinstance(state, str):
-        raise ValidationError('invalid state type')
-    if not state:
-        raise ValidationError('state is required')
 
 class ValidationError(Exception):
     pass

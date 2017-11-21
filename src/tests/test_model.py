@@ -34,8 +34,14 @@ class BaseTests:
                          phone_numbers=['55-31-1234-4321'], addresses=[])
         new_id = self._backend.add_contact(contact)
         self.assertEqual(len(self._contacts), 1)
-        self._backend.delete_contact(new_id)
+        self._backend.delete_contact(str(new_id))
         self.assertEqual(len(self._contacts), 0)
+
+    def test_delete_contact_unavailable_id(self):
+        self._backend.delete_contact(self._unavailable_id)
+
+    def test_delete_contact_invalid_id(self):
+        self._backend.delete_contact(self._invalid_id)
 
     def test_update_contact(self):
         contact = Contact(firstname='First', lastname='Last', emails=['bruno@bruno.com'],
@@ -60,12 +66,28 @@ class BaseTests:
         self.assertEqual(self._contacts, [old_contact])
         self.assertNotEqual(self._contacts, [contact])
 
+    def test_update_contact_invalid_id(self):
+        contact = Contact(firstname='First', lastname='Last', emails=['bruno@bruno.com'],
+                         phone_numbers=['55-31-1234-4321'], addresses=[])
+        new_id = self._backend.add_contact(contact)
+        contact.contact_id = new_id
+        old_contact = deepcopy(contact)
+        contact.contact_id = self._invalid_id
+        contact.firstname = 'NewFirst'
+        self.assertNotEqual(self._contacts, [contact])
+        self._backend.update_contact(contact)
+        self.assertEqual(self._contacts, [old_contact])
+        self.assertNotEqual(self._contacts, [contact])
+
     def test_get_contact(self):
         contact = Contact(firstname='First', lastname='Last', emails=['bruno@bruno.com'],
                          phone_numbers=['55-31-1234-4321'], addresses=[])
         new_id = self._backend.add_contact(contact)
         contact.contact_id = new_id
         self.assertEqual(contact, self._backend.get_contact(new_id))
+
+    def test_get_contact_invalid_id(self):
+        self.assertIsNone(self._backend.get_contact(self._invalid_id))
 
     def test_get_contact_not_available(self):
         self.assertIsNone(self._backend.get_contact(self._unavailable_id))
@@ -122,7 +144,11 @@ class InMemoryTest(unittest.TestCase, BaseTests):
 
     @property
     def _unavailable_id(self):
-        return 10000
+        return '10000'
+
+    @property
+    def _invalid_id(self):
+        return 'invalid'
 
 class InMemorySearchTest(unittest.TestCase, BaseSearchTests):
     def setUp(self):
@@ -139,7 +165,11 @@ class MongoBackendTest(unittest.TestCase, BaseTests):
 
     @property
     def _unavailable_id(self):
-        return ObjectId(b'123456789012')
+        return str(ObjectId(b'123456789012'))
+
+    @property
+    def _invalid_id(self):
+        return 'invalid'
 
     @property
     def _contacts(self):
