@@ -8,6 +8,14 @@ from .validation import validate_contact, ValidationError
 
 app = Flask(__name__)
 
+if 'BACKEND' not in app.config:
+    from pymongo import MongoClient
+    from .model import MongoBackend 
+    mongo = MongoClient('mongodb://127.0.0.1:27017')
+    app.config.update(dict(
+        BACKEND=MongoBackend(mongo.servicefusion)
+    ))
+
 _db = lambda: app.config['BACKEND']
 dumps = lambda o: jsonpickle.dumps(o, unpicklable=False)
 
