@@ -4,7 +4,7 @@ from copy import deepcopy
 from pymongo import MongoClient
 from bson.objectid import ObjectId
 
-from servicefusion.model import Contact, Address, InMemoryBackend, MongoBackend
+from contactsmanager.model import Contact, Address, InMemoryBackend, MongoBackend
 
 
 class ContactTest(unittest.TestCase):
@@ -157,10 +157,10 @@ class InMemorySearchTest(unittest.TestCase, BaseSearchTests):
 class MongoBackendTest(unittest.TestCase, BaseTests):
     def setUp(self):
         self._mongo = MongoClient('mongodb://127.0.0.1:27017')
-        self._backend = MongoBackend(self._mongo.servicefusion_test)
+        self._backend = MongoBackend(self._mongo.contactsmanager_test)
 
     def tearDown(self):
-        self._mongo.drop_database('servicefusion_test')
+        self._mongo.drop_database('contactsmanager_test')
         self._mongo.close()
 
     @property
@@ -178,8 +178,8 @@ class MongoBackendTest(unittest.TestCase, BaseTests):
 class MongoBackendSearchTest(unittest.TestCase, BaseSearchTests):
     def setUp(self):
         self._mongo = MongoClient('mongodb://127.0.0.1:27017')
-        self.baseSearchSetUp(MongoBackend(self._mongo.servicefusion_test))
+        self.baseSearchSetUp(MongoBackend(self._mongo.contactsmanager_test))
 
     def tearDown(self):
-        self._mongo.drop_database('servicefusion_test')
+        self._mongo.drop_database('contactsmanager_test')
         self._mongo.close()

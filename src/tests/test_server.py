@@ -4,8 +4,8 @@ from copy import deepcopy
 from flask import json
 import jsonpickle
 
-from servicefusion.server import app
-from servicefusion.model import InMemoryBackend, Contact, Address
+from contactsmanager.server import app
+from contactsmanager.model import InMemoryBackend, Contact, Address
 
 dumps = lambda o: jsonpickle.dumps(o, unpicklable=False)
 to_dict = lambda o: deepcopy(json.loads(dumps(o)))

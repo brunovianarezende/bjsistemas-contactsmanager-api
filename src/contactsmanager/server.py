@@ -13,7 +13,7 @@ if 'BACKEND' not in app.config:
     from .model import MongoBackend 
     mongo = MongoClient('mongodb://127.0.0.1:27017')
     app.config.update(dict(
-        BACKEND=MongoBackend(mongo.servicefusion)
+        BACKEND=MongoBackend(mongo.contactsmanager)
     ))
 
 _db = lambda: app.config['BACKEND']

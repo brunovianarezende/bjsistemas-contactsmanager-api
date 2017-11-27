@@ -4,8 +4,8 @@ from copy import deepcopy
 from flask import json
 import jsonpickle
 
-from servicefusion.model import Contact, Address
-from servicefusion.validation import validate_contact, ValidationError, validate_address
+from contactsmanager.model import Contact, Address
+from contactsmanager.validation import validate_contact, ValidationError, validate_address
 
 dumps = lambda o: jsonpickle.dumps(o, unpicklable=False)
 to_dict = lambda o: deepcopy(json.loads(dumps(o)))
